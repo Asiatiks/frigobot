@@ -1,0 +1,26 @@
+{
+  "name": "frigobot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Asiatiks/frigobot.git"
+  },
+  "author": "Michael LEMAY & Matthieu MONDESIR",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Asiatiks/frigobot/issues"
+  },
+  "homepage": "https://github.com/Asiatiks/frigobot#readme",
+  "dependencies": {
+    "botbuilder": "^3.13.1",
+    "restify": "^6.3.4"
+  },
+  "devDependencies": {
+    "@types/restify": "^5.0.6"
+  }
+}
