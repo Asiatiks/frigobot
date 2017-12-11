@@ -18,6 +18,7 @@
   "homepage": "https://github.com/Asiatiks/frigobot#readme",
   "dependencies": {
     "botbuilder": "^3.13.1",
+    "dotenv": "^4.0.0",
     "restify": "^6.3.4"
   },
   "devDependencies": {
