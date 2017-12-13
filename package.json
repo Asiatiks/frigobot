@@ -19,6 +19,7 @@
   "dependencies": {
     "botbuilder": "^3.13.1",
     "dotenv": "^4.0.0",
+    "dtrace-provider": "^0.8.5",
     "restify": "^6.3.4"
   },
   "devDependencies": {

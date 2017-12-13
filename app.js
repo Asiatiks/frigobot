@@ -3,22 +3,22 @@ var restify = require('restify');
 var env     = require('dotenv');
 env.config();
 
-//create the bot
+// Create chat connector for communicating with the Bot Framework Service
 var connector = new builder.ChatConnector({
     appId: process.env.MICROSOFT_APP_ID,
     appPassword: process.env.MICROSOFT_APP_PASSWORD
 });
-var bot = new builder.UniversalBot(
-    connector,
-    function(session)
-    { 
-        session.endDialog(`Sorry, I didn't understand '%s'. Type 'Help' if you need assistance`);
+
+//create the bot
+var bot = new builder.UniversalBot(connector, [
+    function(session){
+        session.beginDialog('UserStatus');
     }
-);
+]);
 
 //Recognizer to use a machine learning LUIS
-var recognizer = new builder.LuisRecognizer(process.env.LUIS_MODEL_URL);
-bot.recognizer(recognizer);
+var luisRecognizer = new builder.LuisRecognizer(process.env.LUIS_MODEL_URL);
+bot.recognizer(luisRecognizer);
 
 //create the host web server
 var server = restify.createServer();
@@ -31,49 +31,96 @@ server.listen(
     }
 );
 
-/**
- * Intents recognizer
- */
-bot.dialog('AddProduct', [
-    function(session, args, next){
-        session.send(`Welcome to Frigobot! We are analyzing your message: %s`, session.message.text);        
 
-        var intentResult = args.intent;
-        var fruitEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'fruit');
-        var vegetableEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'vegetable');
-        var numberEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'number');
 
-        //Waterfall Dialog
-        if (fruitEntity)
-        {
-            //fruit entity detected
-            console.log('Fruit => %s', session.message.text);
-            next({ response: fruitEntity.entity });
-        } else if (vegetableEntity){
-            //vegetable entity detected
-            console.log('Vegetable => %s', session.message.text);
-            next({ response: vegetableEntity.entity });
-        } else if (numberEntity){
-            //vegetable entity detected
-            console.log('Number => %s', session.message.text);
-            next({ response: numberEntity.entity });
+
+bot.dialog('UserStatus', [
+    function (session) {
+        if (session.userData.name != null) {
+            session.beginDialog('SignIn');
         } else {
-            console.log('NONE ENTITY HAS BEEN FOUND');
+            session.beginDialog('SignUp');
         }
     }
-]).triggerAction({
-    matches: 'AddProduct',
-    onInterrupted: function (session){
-        session.send('Please provide an article');
+]);
+
+bot.dialog('SignIn', [
+    function (session) {
+        session.send(`Hello ${session.userData.name}!`);
+        session.beginDialog('frigoMenu');
     }
+]);
+
+bot.dialog('SignUp', [
+    function (session) {
+        session.send(`Hello and welcome here!`);
+        session.send(`I'm Frigobot, i will help you to manage your fridge and what you eat`);
+        session.send(`Let's create your account together! (Don't worry, it's very fast :) )`);
+        builder.Prompts.text(session, `Firstly, how can I call you?`);
+    },
+    function (session, results) {
+        var name = results.response;
+        session.userData.name = name;
+        session.endDialogWithResult(results);
+        session.save();
+        session.beginDialog('frigoMenu');
+    }
+]);
+
+
+
+
+
+
+
+var menuItems = {
+    "Add product": {
+        item: "AddProduct"
+    },
+    "Remove product": {
+        item: "RemoveProduct"
+    },
+    "Check fridge": {
+        item: "CheckFridge"
+    }
+}
+
+bot.dialog('frigoMenu', [
+    function (session) {
+        builder.Prompts.choice(session, `Main menu: `, menuItems, { listStyle: 3 });
+    },
+    function(session, results) {
+        if(results.response) {
+            session.beginDialog(menuItems[results.response.entity].item);
+        }
+    }
+])
+.triggerAction({
+    matches: /^main menu$/i,
+    confirmPrompt: "You'll loose your progression, are you sure?"
 });
+
+
+bot.dialog('AddProduct', [
+    function (session) {
+    
+    },
+    function(session, results) {
+    }
+])
 
 bot.dialog('RemoveProduct', [
-]).triggerAction({
-    matches: 'RemoveProduct'
-});
+    function (session) {
+    
+    },
+    function(session, results) {
+    }
+])
 
-bot.dialog('Help', [
-]).triggerAction({
-    matches: 'Help'
-});
+bot.dialog('CheckFridge', [
+    function (session) {
+    
+    },
+    function(session, results) {
+    }
+])
