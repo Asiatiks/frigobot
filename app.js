@@ -101,14 +101,38 @@ bot.dialog('frigoMenu', [
 });
 
 
+/**
+* Intents recognizer
+*/
 bot.dialog('AddProduct', [
-    function (session) {
-    
-    },
-    function(session, results) {
-    }
-])
+    function(session, args, next){
+        session.send(`Welcome to Frigobot! We are analyzing your message: %s`, session.message.text);
+        session.beginDialog('SignIn');
 
+        var intentResult = args.intent;
+        var fruitEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'fruit');		
+        var vegetableEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'vegetable');		
+        var numberEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'builtin.number');		
+
+        //Waterfall Dialog
+        if (fruitEntity)
+        {
+            //fruit entity detected
+            console.log('Fruit => %s', fruitEntity.entity);
+            next({ response: fruitEntity.entity });
+        } if (vegetableEntity){
+            //vegetable entity detected		
+            console.log('Vegetable => %s', vegetableEntity.entity);		
+            next({ response: vegetableEntity.entity });		
+        } if (numberEntity){
+            //number entity detected		
+            console.log('Number => %s', numberEntity.entity);		
+            next({ response: numberEntity.entity });		
+        }
+    }
+]).triggerAction({
+    matches: 'AddProduct'
+});
 bot.dialog('RemoveProduct', [
     function (session) {
     
