@@ -114,21 +114,27 @@ bot.dialog('AddProduct', [
         var vegetableEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'vegetable');		
         var numberEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'builtin.number');		
 
+        let product = '';
+        let number = 1;
         //Waterfall Dialog
         if (fruitEntity)
         {
             //fruit entity detected
+            product = fruitEntity.entity;
             console.log('Fruit => %s', fruitEntity.entity);
             next({ response: fruitEntity.entity });
         } if (vegetableEntity){
             //vegetable entity detected		
+            product = vegetableEntity.entity;
             console.log('Vegetable => %s', vegetableEntity.entity);		
             next({ response: vegetableEntity.entity });		
         } if (numberEntity){
             //number entity detected		
+            number = numberEntity.entity;
             console.log('Number => %s', numberEntity.entity);		
             next({ response: numberEntity.entity });		
         }
+        builder.Prompts.text(session, `You just added ${number} ${product} in the fridge`);
     }
 ]).triggerAction({
     matches: 'AddProduct'
