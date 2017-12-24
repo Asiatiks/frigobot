@@ -31,9 +31,6 @@ server.listen(
     }
 );
 
-
-
-
 bot.dialog('UserStatus', [
     function (session) {
         if (session.userData.name != null) {
@@ -105,47 +102,45 @@ bot.dialog('frigoMenu', [
 * Intents recognizer
 */
 bot.dialog('AddProduct', [
-    function(session, args, next){
-        session.send(`Welcome to Frigobot! We are analyzing your message: %s`, session.message.text);
-        session.beginDialog('SignIn');
+    function (session, args, next){
+        session.send(`Welcome to Frigobot! Let's %s`, session.message.text);
 
         var intentResult = args.intent;
         var fruitEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'fruit');		
         var vegetableEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'vegetable');		
         var numberEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'builtin.number');		
 
-        let product = '';
-        let number = 1;
+        let sentence = '';
+
         //Waterfall Dialog
+        if (numberEntity){
+            //number entity detected
+            sentence += ` ${numberEntity.entity}`;
+            console.log('Number => %s', numberEntity.entity);	
+            next({ response: numberEntity.entity });		
+        }
         if (fruitEntity)
         {
             //fruit entity detected
-            product = fruitEntity.entity;
+            sentence += ` ${fruitEntity.entity}`;
             console.log('Fruit => %s', fruitEntity.entity);
-            next({ response: fruitEntity.entity });
-        } if (vegetableEntity){
-            //vegetable entity detected		
-            product = vegetableEntity.entity;
-            console.log('Vegetable => %s', vegetableEntity.entity);		
-            next({ response: vegetableEntity.entity });		
-        } if (numberEntity){
-            //number entity detected		
-            number = numberEntity.entity;
-            console.log('Number => %s', numberEntity.entity);		
-            next({ response: numberEntity.entity });		
+            // next({ response: fruitEntity.entity });
         }
-        builder.Prompts.text(session, `You just added ${number} ${product} in the fridge`);
+        else if (vegetableEntity){
+            //vegetable entity detected
+            sentence += ` ${vegetableEntity.entity}`;
+            console.log('Fruit => %s', fruitEntity.entity);
+            // next({ response: vegetableEntity.entity });		
+        }
+        
+        builder.Prompts.text(session, `I've just added ${sentence} in the fridge`);
     }
 ]).triggerAction({
     matches: 'AddProduct'
 });
 bot.dialog('RemoveProduct', [
-    function (session) {
     
-    },
-    function(session, results) {
-    }
-])
+]);
 
 bot.dialog('CheckFridge', [
     function (session) {
