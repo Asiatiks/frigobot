@@ -64,11 +64,8 @@ bot.dialog('SignUp', [
     }
 ]);
 
-
-
-
-
-
+//Products are temporarly stored here
+var productList = [];
 
 var menuItems = {
     "Add product": {
@@ -97,37 +94,59 @@ bot.dialog('frigoMenu', [
     confirmPrompt: "You'll loose your progression, are you sure?"
 });
 
-
 /**
-* Intents recognizer
+* Add Products in the fridge
 */
 bot.dialog('AddProduct', [
     function (session, args, next){
-        var sentence = manageProduct(session, args, next);
+        //render the user sentence 
+        var sentence = identifyProduct(session, args, next);
+        //store all products
+        productList.push(sentence);
+        console.log(`Product List : ${productList}`);        
         builder.Prompts.text(session, `I've just added ${sentence} in the fridge`);
+    },
+    function (session, results) {
+        session.userData.productList = productList;
+        session.endDialogWithResult(results);
+        session.save();
     }
 ]).triggerAction({
     matches: 'AddProduct'
 });
+
+//Remove products from the fridge
 bot.dialog('RemoveProduct', [
     function (session, args, next){
-        var sentence = manageProduct(session, args, next);
+        var sentence = identifyProduct(session, args, next);
+        for (i = 0; i < phraseTab.length; i++)
+        {
+            //Identify the product to remove
+        }
         builder.Prompts.text(session, `I've just removed ${sentence} from the fridge`)
     }
 ]).triggerAction({
     matches: 'RemoveProduct'
 });
 
+
 bot.dialog('CheckFridge', [
     function (session) {
-    
+        if (productList.length > 0)
+        {
+            session.send()
+            for (i = 0; i < productList.length; i++)
+            {
+                //render all products
+            }
+        }
     },
     function(session, results) {
     }
 ])
 
-//Identify entities and render a sentence replied by the bot
-function manageProduct(session, args, next){
+//Identify entities and render a sentence to store or remove in "phraseTab"
+function identifyProduct(session, args, next){
     session.send(`Welcome to Frigobot! Let's %s`, session.message.text);
     
     var intentResult = args.intent;
@@ -136,7 +155,6 @@ function manageProduct(session, args, next){
     var numberEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'builtin.number');		
 
     let sentence = '';
-
     //Waterfall Dialog
     if (numberEntity){
         //number entity detected
@@ -154,9 +172,9 @@ function manageProduct(session, args, next){
     else if (vegetableEntity){
         //vegetable entity detected
         sentence += ` ${vegetableEntity.entity}`;
-        console.log('Fruit => %s', fruitEntity.entity);
+        console.log('Fruit => %s', vegetableEntity.entity);
         // next({ response: vegetableEntity.entity });		
     }
-
+    
     return sentence;
 }
