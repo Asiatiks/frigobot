@@ -103,44 +103,20 @@ bot.dialog('frigoMenu', [
 */
 bot.dialog('AddProduct', [
     function (session, args, next){
-        session.send(`Welcome to Frigobot! Let's %s`, session.message.text);
-
-        var intentResult = args.intent;
-        var fruitEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'fruit');		
-        var vegetableEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'vegetable');		
-        var numberEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'builtin.number');		
-
-        let sentence = '';
-
-        //Waterfall Dialog
-        if (numberEntity){
-            //number entity detected
-            sentence += ` ${numberEntity.entity}`;
-            console.log('Number => %s', numberEntity.entity);	
-            next({ response: numberEntity.entity });		
-        }
-        if (fruitEntity)
-        {
-            //fruit entity detected
-            sentence += ` ${fruitEntity.entity}`;
-            console.log('Fruit => %s', fruitEntity.entity);
-            // next({ response: fruitEntity.entity });
-        }
-        else if (vegetableEntity){
-            //vegetable entity detected
-            sentence += ` ${vegetableEntity.entity}`;
-            console.log('Fruit => %s', fruitEntity.entity);
-            // next({ response: vegetableEntity.entity });		
-        }
-        
+        var sentence = manageProduct(session, args, next);
         builder.Prompts.text(session, `I've just added ${sentence} in the fridge`);
     }
 ]).triggerAction({
     matches: 'AddProduct'
 });
 bot.dialog('RemoveProduct', [
-    
-]);
+    function (session, args, next){
+        var sentence = manageProduct(session, args, next);
+        builder.Prompts.text(session, `I've just removed ${sentence} from the fridge`)
+    }
+]).triggerAction({
+    matches: 'RemoveProduct'
+});
 
 bot.dialog('CheckFridge', [
     function (session) {
@@ -149,3 +125,38 @@ bot.dialog('CheckFridge', [
     function(session, results) {
     }
 ])
+
+//Identify entities and render a sentence replied by the bot
+function manageProduct(session, args, next){
+    session.send(`Welcome to Frigobot! Let's %s`, session.message.text);
+    
+    var intentResult = args.intent;
+    var fruitEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'fruit');		
+    var vegetableEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'vegetable');		
+    var numberEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'builtin.number');		
+
+    let sentence = '';
+
+    //Waterfall Dialog
+    if (numberEntity){
+        //number entity detected
+        sentence += ` ${numberEntity.entity}`;
+        console.log('Number => %s', numberEntity.entity);	
+        next({ response: numberEntity.entity });		
+    }
+    if (fruitEntity)
+    {
+        //fruit entity detected
+        sentence += ` ${fruitEntity.entity}`;
+        console.log('Fruit => %s', fruitEntity.entity);
+        // next({ response: fruitEntity.entity });
+    }
+    else if (vegetableEntity){
+        //vegetable entity detected
+        sentence += ` ${vegetableEntity.entity}`;
+        console.log('Fruit => %s', fruitEntity.entity);
+        // next({ response: vegetableEntity.entity });		
+    }
+
+    return sentence;
+}
