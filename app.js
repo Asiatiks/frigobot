@@ -67,13 +67,13 @@ bot.dialog('SignUp', [
 var productList = [];
 
 var menuItems = {
-    "Add product": {
+    "Add some products": {
         item: "AddProduct"
     },
-    "Remove product": {
+    "Remove some products": {
         item: "RemoveProduct"
     },
-    "Check fridge": {
+    "Check the fridge": {
         item: "CheckFridge"
     }
 }
@@ -110,6 +110,7 @@ bot.dialog('AddProduct', [
         session.userData.productList = productList;
         session.endDialogWithResult(results);
         session.save();
+        // console.log(session);
     }
 ]).triggerAction({
     matches: 'AddProduct'
@@ -147,8 +148,9 @@ bot.dialog('CheckFridge', [
 
 //Identify entities and render a sentence to store or remove in "phraseTab"
 function identifyProduct(session, args, next){
-    session.send(`Welcome to Frigobot! Let's %s`, session.message.text);
-    
+    session.send(`Okay! Let's %s`, session.message.text);
+    // builder.Prompts.text('Please provide all the products');
+
     var intentResult = args.intent;
     var fruitEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'fruit');		
     var vegetableEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'vegetable');		
@@ -175,6 +177,6 @@ function identifyProduct(session, args, next){
         console.log('Fruit => %s', vegetableEntity.entity);
         // next({ response: vegetableEntity.entity });		
     }
-    
+    // console.log(sentence);
     return sentence;
 }
