@@ -18,7 +18,6 @@ var bot = new builder.UniversalBot(connector, [
 
 //Recognizer to use a machine learning LUIS
 var luisRecognizer = new builder.LuisRecognizer(process.env.LUIS_MODEL_URL);
-bot.recognizer(luisRecognizer);
 
 //create the host web server
 var server = restify.createServer();
@@ -81,6 +80,7 @@ var menuItems = {
 
 bot.dialog('frigoMenu', [
     function (session) {
+        bot.recognizer(luisRecognizer);
         builder.Prompts.choice(session, `Main menu: `, menuItems, { listStyle: 3 });
     },
     function(session, results) {
