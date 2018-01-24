@@ -83,14 +83,18 @@ var productList = [];
 
 var menuItems = {
     "Manage my fridge": {
-        item: "AddProduct"
+        item: "ManageFridge"
     },
     "Check my fridge": {
-        item: "RemoveProduct"
+        item: "CheckFridge"
     },
     "Suggest a recipe": {
-        item: "RemoveProduct"
+        item: "RecipeSuggestion"
+    },
+    "Help": {
+        item: "Help"
     }
+
 }
 bot.dialog('frigoMenu', [
     function (session) {
@@ -108,41 +112,84 @@ bot.dialog('frigoMenu', [
     confirmPrompt: "You'll loose your progression, are you sure?"
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /**
-* Add Products in the fridge
+* Manage the fridge part
 */
-bot.dialog('AddProduct', [
+bot.dialog('ManageFridge', [
     function (session, args, next){
-        //render the user sentence 
-        var sentence = identifyProduct(session, args, next);
-        //store all products
-        productList.push(sentence);
-        console.log(`Product List : ${productList}`);        
-        builder.Prompts.text(session, `I've just added ${sentence} in the fridge`);
+        session.send(`Here you can manage your fridge, by adding or removing products easily`);
+        session.send(`Just type what you want to do like "add me 1 tomato" or "i ate 4 apples", and I will manage what you got ;)`);
+        builder.Prompts.text(session, `What can i do for you?`);
     },
-    function (session, results) {
-        session.userData.productList = productList;
-        session.endDialogWithResult(results);
-        session.save();
-        // console.log(session);
-    }
+    function (session, args, results) {
+        //Identify entities and render a sentence to store or remove in "phraseTab"
+    session.send(`Okay! Let's %s`, session.message.text);
+    // builder.Prompts.text('Please provide all the products');
+
+        var intentResult = args.intent;
+        var fruitEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'fruit');		
+        var vegetableEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'vegetable');		
+        var numberEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'builtin.number');		
+
+        let sentence = '';
+        
+        //Waterfall Dialog
+        if (numberEntity){
+            //number entity detected
+            sentence += ` ${numberEntity.entity}`;
+            console.log('Number => %s', numberEntity.entity);	
+            next({ response: numberEntity.entity });		
+        }
+        if (fruitEntity)
+        {
+            //fruit entity detected
+            sentence += ` ${fruitEntity.entity}`;
+            console.log('Fruit => %s', fruitEntity.entity);
+            // next({ response: fruitEntity.entity });
+        }
+        else if (vegetableEntity){
+            //vegetable entity detected
+            sentence += ` ${vegetableEntity.entity}`;
+            console.log('Fruit => %s', vegetableEntity.entity);
+            // next({ response: vegetableEntity.entity });		
+        }
+        // console.log(sentence);
+        return sentence;
+    } 
 ]).triggerAction({
-    matches: 'AddProduct'
+    matches: 'ManageFridge'
 });
 
-//Remove products from the fridge
-bot.dialog('RemoveProduct', [
-    function (session, args, next){
-        var sentence = identifyProduct(session, args, next);
-        for (i = 0; i < phraseTab.length; i++)
-        {
-            //Identify the product to remove
-        }
-        builder.Prompts.text(session, `I've just removed ${sentence} from the fridge`)
-    }
-]).triggerAction({
-    matches: 'RemoveProduct'
-});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 bot.dialog('CheckFridge', [
@@ -164,6 +211,7 @@ bot.dialog('CheckFridge', [
 function identifyProduct(session, args, next){
     session.send(`Okay! Let's %s`, session.message.text);
     // builder.Prompts.text('Please provide all the products');
+    console.log("TA MERE LA GROSSE PUTE DU IDENTIFY");
 
     var intentResult = args.intent;
     var fruitEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'fruit');		
@@ -194,3 +242,11 @@ function identifyProduct(session, args, next){
     // console.log(sentence);
     return sentence;
 }
+
+
+
+bot.dialog('Help', function (session) {
+    // ...
+}).triggerAction({
+    matches: 'Help'
+});

@@ -42,7 +42,7 @@ bot.dialog('UserStatus', [
 
 bot.dialog('SignIn', [
     function (session) {
-        session.send(`Hello ${session.userData.name}!`);
+        session.send(`Welcome back ${session.userData.name}!`);
         session.beginDialog('frigoMenu');
     }
 ]);
