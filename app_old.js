@@ -30,13 +30,6 @@ server.listen(
     }
 );
 
-
-
-
-
-
-
-
 bot.dialog('UserStatus', [
     function (session) {
         if (session.userData.name != null) {
@@ -57,7 +50,7 @@ bot.dialog('SignIn', [
 bot.dialog('SignUp', [
     function (session) {
         session.send(`Hello and welcome here!`);
-        session.send(`I'm Frigobot, I will help you to manage your fridge and what you eat`);
+        session.send(`I'm Frigobot, i will help you to manage your fridge and what you eat`);
         session.send(`Let's create your account together! (Don't worry, it's very fast :) )`);
         builder.Prompts.text(session, `Firstly, how can I call you?`);
     },
@@ -70,28 +63,21 @@ bot.dialog('SignUp', [
     }
 ]);
 
-
-
-
-
-
-
-
-
 //Products are temporarly stored here
 var productList = [];
 
 var menuItems = {
-    "Manage my fridge": {
+    "Add some products": {
         item: "AddProduct"
     },
-    "Check my fridge": {
+    "Remove some products": {
         item: "RemoveProduct"
     },
-    "Suggest a recipe": {
-        item: "RemoveProduct"
+    "Check the fridge": {
+        item: "CheckFridge"
     }
 }
+
 bot.dialog('frigoMenu', [
     function (session) {
         bot.recognizer(luisRecognizer);
