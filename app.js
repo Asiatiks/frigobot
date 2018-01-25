@@ -56,8 +56,9 @@ bot.dialog('SignUp', [
     },
     function (session, results) {
         var name = results.response;
-        session.userData.name = name;
+        session.userData.name = name;       
         session.endDialogWithResult(results);
+        session.userData.productList = new Object();
         session.save();
         session.beginDialog('frigoMenu');
     }
@@ -99,21 +100,35 @@ var products = new Object();
 bot.dialog('AddProduct', [
     function (session, args, next){
         
-        products = identifyProduct(session, args, next);
+        console.log(`Object session : ${JSON.stringify(session.userData, null, 4)}`);
 
+        products = identifyProduct(session, args, next);
         for (var key in products)
         {
-            console.log('Products Key : '+products[key]);
-            builder.Prompts.text(session, `I've just added ${products[key]} ${key} in the fridge`);
+            // console.log('PRODUCT KEY ===> HERE : '+products[key]+', '+key);
+            session.userData.productList[key] = products;
+            console.log(session.userData.productList[key]);
+            console.log(products[key]);
+            if (products[key] === session.userData.productList[key])
+            {
+                session.userData.productList[key] += products[key];
+                console.log('Products Key : '+products[key]+', ProductList Key : '+session.userData.productList[key]);
+            } else {
+                session.userData.productList[key] = products[key];
+                console.log('Products Key 2 : '+products[key]+', ProductList Key : '+session.userData.productList[key]);
+            }
         }
 
-        // console.log(`Product List : `+productList[product]);
     },
     function (session, results) {
-        session.userData.productList = products
+        // console.log(`Products Key NEXT : ${JSON.stringify(results.response, null, 4)}`);
+        // session.userData.productList = products;
         session.endDialogWithResult(results);
         session.save();
-        console.log('OBJET AFTER ? : '+session.userData.productList);
+        console.log(`Object session : ${JSON.stringify(session.userData.productList, null, 4)}`);
+        
+        // console.log(`Ceci est la prodcut list ==> ${JSON.stringify(session.userData.productList, null, 4)}`);
+        // console.log('OBJET AFTER ? : '+session.userData.productList);
     }
 ]).triggerAction({
     matches: 'AddProduct'
@@ -162,16 +177,14 @@ function identifyProduct(session, args, next){
     var vegetableEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'vegetable');		
     var numberEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'builtin.number');		
 
-    let sentence = '';
     let product = '';
     let value;
 
     if (fruitEntity)
     {
         //fruit entity detected
-        product = fruitEntity.entity; 
+        product = fruitEntity.entity;
         
-        sentence += ` ${fruitEntity.entity}`;
         console.log('Fruit => %s', fruitEntity.entity);
         next({ response: fruitEntity.entity });
     }
@@ -179,7 +192,6 @@ function identifyProduct(session, args, next){
         //vegetable entity detected
         product = vegetableEntity.entity;
        
-        sentence += ` ${vegetableEntity.entity}`;
         console.log('Fruit => %s', vegetableEntity.entity);
         next({ response: vegetableEntity.entity });		
     }
@@ -187,21 +199,17 @@ function identifyProduct(session, args, next){
     if (numberEntity){
         //number entity detected
         productList[product] = numberEntity.entity;
-        sentence += ` ${numberEntity.entity}`;
     }
     return productList;
 }
 
 //Function which test if the product already exist
-function sameProduct(product){
+function sameProduct(products, values){
     let same = false;
             
-    for (var p in productList)
+    for (var p in products)
     {
-        if (p == product)
-        {
-            same = true;        
-        }
+        console.log(products[p]+p);
     }
     return same;
 }
