@@ -63,9 +63,6 @@ bot.dialog('SignUp', [
     }
 ]);
 
-//Products are temporarly stored here
-var productList = [];
-
 var menuItems = {
     "Add some products": {
         item: "AddProduct"
@@ -94,23 +91,29 @@ bot.dialog('frigoMenu', [
     confirmPrompt: "You'll loose your progression, are you sure?"
 });
 
+var products = new Object();
+
 /**
 * Add Products in the fridge
 */
 bot.dialog('AddProduct', [
     function (session, args, next){
-        //render the user sentence 
-        var sentence = identifyProduct(session, args, next);
-        //store all products
-        productList.push(sentence);
-        console.log(`Product List : ${productList}`);        
-        builder.Prompts.text(session, `I've just added ${sentence} in the fridge`);
+        
+        products = identifyProduct(session, args, next);
+
+        for (var key in products)
+        {
+            console.log('Products Key : '+products[key]);
+            builder.Prompts.text(session, `I've just added ${products[key]} ${key} in the fridge`);
+        }
+
+        // console.log(`Product List : `+productList[product]);
     },
     function (session, results) {
-        session.userData.productList = productList;
+        session.userData.productList = products
         session.endDialogWithResult(results);
         session.save();
-        // console.log(session);
+        console.log('OBJET AFTER ? : '+session.userData.productList);
     }
 ]).triggerAction({
     matches: 'AddProduct'
@@ -148,8 +151,11 @@ bot.dialog('CheckFridge', [
 
 //Identify entities and render a sentence to store or remove in "phraseTab"
 function identifyProduct(session, args, next){
-    session.send(`Okay! Let's %s`, session.message.text);
+    session.send(`Okay! Let's '%s'`, session.message.text);
     // builder.Prompts.text('Please provide all the products');
+    
+    //Products are stored here
+    var productList = new Object();
 
     var intentResult = args.intent;
     var fruitEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'fruit');		
@@ -157,26 +163,45 @@ function identifyProduct(session, args, next){
     var numberEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'builtin.number');		
 
     let sentence = '';
-    //Waterfall Dialog
-    if (numberEntity){
-        //number entity detected
-        sentence += ` ${numberEntity.entity}`;
-        console.log('Number => %s', numberEntity.entity);	
-        next({ response: numberEntity.entity });		
-    }
+    let product = '';
+    let value;
+
     if (fruitEntity)
     {
         //fruit entity detected
+        product = fruitEntity.entity; 
+        
         sentence += ` ${fruitEntity.entity}`;
         console.log('Fruit => %s', fruitEntity.entity);
-        // next({ response: fruitEntity.entity });
+        next({ response: fruitEntity.entity });
     }
     else if (vegetableEntity){
         //vegetable entity detected
+        product = vegetableEntity.entity;
+       
         sentence += ` ${vegetableEntity.entity}`;
         console.log('Fruit => %s', vegetableEntity.entity);
-        // next({ response: vegetableEntity.entity });		
+        next({ response: vegetableEntity.entity });		
     }
-    // console.log(sentence);
-    return sentence;
+
+    if (numberEntity){
+        //number entity detected
+        productList[product] = numberEntity.entity;
+        sentence += ` ${numberEntity.entity}`;
+    }
+    return productList;
+}
+
+//Function which test if the product already exist
+function sameProduct(product){
+    let same = false;
+            
+    for (var p in productList)
+    {
+        if (p == product)
+        {
+            same = true;        
+        }
+    }
+    return same;
 }
