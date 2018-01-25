@@ -21,6 +21,7 @@ var bot = new builder.UniversalBot(connector, [
 
 //Recognizer to use a machine learning LUIS
 var luisRecognizer = new builder.LuisRecognizer(process.env.LUIS_MODEL_URL);
+var apiKey = process.env.recipeApiKey;
 
 //create the host web server
 var server = restify.createServer();
@@ -68,6 +69,7 @@ bot.dialog('SignUp', [
         var name = results.response;
         session.userData.name = name;
         session.endDialogWithResult(results);
+        session.userData.productList = new Object();
         session.save();
         session.beginDialog('frigoMenu');
     }
@@ -78,11 +80,6 @@ bot.dialog('SignUp', [
 
 
 
-
-
-
-//Products are temporarly stored here
-var productList = [];
 
 var menuItems = {
     "Manage my fridge": {
@@ -200,31 +197,22 @@ bot.dialog('RemoveProduct', [
     }
 ]);
 
-
 bot.dialog('CheckFridge', [
     function (session) {
 
-        var productList = { "Apple" : 1, "Chocolate" : 2, "biscuit": 3 };  
+        //Generate fake datas for the begining of the demo
+        session.userData.productList["tomato"] = 4;
+        session.userData.productList["apple"] = 8;
+        session.userData.productList["carrots"] = 7;
+        session.userData.productList["spinach"] = 9;
+
+        var productList = session.userData.productList;  
+        session.send("This what you currently have on your fridge");
         for(var product in productList)
         {
             var value = productList[product];
-            session.send(product + " = " + value + '<br>');
+            session.send(product + " = " + productList[product] + '<br>');
         }
-
-
-        var msg = new builder.Message(session);
-        msg.attachmentLayout(builder.AttachmentLayout.carousel)
-        msg.attachments([
-            new builder.HeroCard(session)
-                .title("Fridge Status")
-                .subtitle("This what you currently have on your fridge")
-                .text("Price is $25 and carried in sizes (S, M, L, and XL)")
-                .buttons([
-                    builder.CardAction.imBack(session, "buy classic white t-shirt", "Buy")
-                ])
-        ]);
-        session.send(msg).endDialog();
-
 
     },
     function(session, results) {
@@ -237,12 +225,15 @@ bot.dialog('CheckFridge', [
 bot.dialog('RecipeSuggestion', [
     function (session) {
 
+        console.log('Api KEY : '+apiKey);
+
         var productList = { "Apple" : 1, "Chocolate" : 2, "biscuit": 3 };  
         for(var product in productList)
         {
             var value = productList[product];
             session.send(product + " = " + value + '<br>');
         }
+
 
 
         var msg = new builder.Message(session);
