@@ -216,20 +216,11 @@ bot.dialog('CheckFridge', [
         msg.attachmentLayout(builder.AttachmentLayout.carousel)
         msg.attachments([
             new builder.HeroCard(session)
-                .title("Classic White T-Shirt")
-                .subtitle("100% Soft and Luxurious Cotton")
+                .title("Fridge Status")
+                .subtitle("This what you currently have on your fridge")
                 .text("Price is $25 and carried in sizes (S, M, L, and XL)")
-                .images([builder.CardImage.create(session, 'http://petersapparel.parseapp.com/img/whiteshirt.png')])
                 .buttons([
                     builder.CardAction.imBack(session, "buy classic white t-shirt", "Buy")
-                ]),
-            new builder.HeroCard(session)
-                .title("Classic Gray T-Shirt")
-                .subtitle("100% Soft and Luxurious Cotton")
-                .text("Price is $25 and carried in sizes (S, M, L, and XL)")
-                .images([builder.CardImage.create(session, 'http://petersapparel.parseapp.com/img/grayshirt.png')])
-                .buttons([
-                    builder.CardAction.imBack(session, "buy classic gray t-shirt", "Buy")
                 ])
         ]);
         session.send(msg).endDialog();
@@ -240,40 +231,84 @@ bot.dialog('CheckFridge', [
     }
 ])
 
-//Identify entities and render a sentence to store or remove in "phraseTab"
-function identifyProduct(session, args, next){
-    session.send(`Okay! Let's %s`, session.message.text);
-    // builder.Prompts.text('Please provide all the products');
 
-    var intentResult = args.intent;
-    var fruitEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'fruit');		
-    var vegetableEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'vegetable');		
-    var numberEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'builtin.number');		
 
-    let sentence = '';
-    //Waterfall Dialog
-    if (numberEntity){
-        //number entity detected
-        sentence += ` ${numberEntity.entity}`;
-        console.log('Number => %s', numberEntity.entity);	
-        next({ response: numberEntity.entity });		
+
+bot.dialog('RecipeSuggestion', [
+    function (session) {
+
+        var productList = { "Apple" : 1, "Chocolate" : 2, "biscuit": 3 };  
+        for(var product in productList)
+        {
+            var value = productList[product];
+            session.send(product + " = " + value + '<br>');
+        }
+
+
+        var msg = new builder.Message(session);
+        msg.attachmentLayout(builder.AttachmentLayout.carousel)
+        msg.attachments([
+            new builder.HeroCard(session)
+                .title("Fridge Status")
+                .subtitle("This what you currently have on your fridge")
+                .text("Price is $25 and carried in sizes (S, M, L, and XL)")
+                .buttons([
+                    builder.CardAction.imBack(session, "buy classic white t-shirt", "Buy")
+                ])
+        ]);
+        session.send(msg).endDialog();
+
+
+    },
+    function(session, results) {
     }
-    if (fruitEntity)
-    {
-        //fruit entity detected
-        sentence += ` ${fruitEntity.entity}`;
-        console.log('Fruit => %s', fruitEntity.entity);
-        // next({ response: fruitEntity.entity });
+])
+
+// Add dialog to handle 'Buy' button click
+bot.dialog('buyButtonClick', [
+    function (session, args, next) {
+        // Get color and optional size from users utterance
+        var utterance = args.intent.matched[0];
+        var color = /(white|gray)/i.exec(utterance);
+        var size = /\b(Extra Large|Large|Medium|Small)\b/i.exec(utterance);
+        if (color) {
+            // Initialize cart item
+            var item = session.dialogData.item = { 
+                product: "classic " + color[0].toLowerCase() + " t-shirt",
+                size: size ? size[0].toLowerCase() : null,
+                price: 25.0,
+                qty: 1
+            };
+            if (!item.size) {
+                // Prompt for size
+                builder.Prompts.choice(session, "What size would you like?", "Small|Medium|Large|Extra Large");
+            } else {
+                //Skip to next waterfall step
+                next();
+            }
+        } else {
+            // Invalid product
+            session.send("I'm sorry... That product wasn't found.").endDialog();
+        }   
+    },
+    function (session, results) {
+        // Save size if prompted
+        var item = session.dialogData.item;
+        if (results.response) {
+            item.size = results.response.entity.toLowerCase();
+        }
+
+        // Add to cart
+        if (!session.userData.cart) {
+            session.userData.cart = [];
+        }
+        session.userData.cart.push(item);
+
+        // Send confirmation to users
+        session.send("A '%(size)s %(product)s' has been added to your cart.", item).endDialog();
     }
-    else if (vegetableEntity){
-        //vegetable entity detected
-        sentence += ` ${vegetableEntity.entity}`;
-        console.log('Fruit => %s', vegetableEntity.entity);
-        // next({ response: vegetableEntity.entity });		
-    }
-    // console.log(sentence);
-    return sentence;
-}
+]).triggerAction({ matches: /(buy|add)\s.*shirt/i });
+
 
 
 
