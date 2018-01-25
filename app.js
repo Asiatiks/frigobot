@@ -3,6 +3,9 @@ var restify = require('restify');
 var env     = require('dotenv');
 env.config();
 
+var api_key = "http://food2fork.com/api/search?key=26e704c5e32e6f52bb94c7d68c90b38c&q=";
+
+
 // Create chat connector for communicating with the Bot Framework Service
 var connector = new builder.ChatConnector({
     appId: process.env.MICROSOFT_APP_ID,
@@ -102,7 +105,6 @@ bot.dialog('frigoMenu', [
     },
     function(session, results) {
         if(results.response) {
-            bot.recognizer(luisRecognizer);
             session.endDialogWithResult(results);
             session.beginDialog(menuItems[results.response.entity].item);
         }
@@ -158,14 +160,20 @@ bot.dialog('ManageFridge', [
 * Add Products in the fridge
 */
 bot.dialog('AddProduct', [
-    function (session, args, next){
+    function (session){
         builder.Prompts.text(session, `What did you bought today? :)`);
     },
-    function (session, results) {
+    function (session, args, next){
+        bot.recognizer(luisRecognizer);
         //render the user sentence 
-        console.log("YO MA GUEULE");
-        var sentence = identifyProduct(session, args, next);
+        //var sentence = identifyProduct(session, args, next);
         //store all products
+
+        console.log(args.intent);
+
+        var intentResult = args.intent;
+        var fruitEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'fruit');	
+
         productList.push(sentence);
         console.log(`Product List : ${productList}`);        
         builder.Prompts.text(session, `I've just added ${sentence} in the fridge`);
@@ -176,9 +184,7 @@ bot.dialog('AddProduct', [
         session.save();
         // console.log(session);
     }
-]).triggerAction({
-    matches: 'AddProduct'
-});
+]);
 
 
 
@@ -192,21 +198,43 @@ bot.dialog('RemoveProduct', [
         }
         builder.Prompts.text(session, `I've just removed ${sentence} from the fridge`)
     }
-]).triggerAction({
-    matches: 'RemoveProduct'
-});
+]);
 
 
 bot.dialog('CheckFridge', [
     function (session) {
-        if (productList.length > 0)
+
+        var productList = { "Apple" : 1, "Chocolate" : 2, "biscuit": 3 };  
+        for(var product in productList)
         {
-            session.send()
-            for (i = 0; i < productList.length; i++)
-            {
-                //render all products
-            }
+            var value = productList[product];
+            session.send(product + " = " + value + '<br>');
         }
+
+
+        var msg = new builder.Message(session);
+        msg.attachmentLayout(builder.AttachmentLayout.carousel)
+        msg.attachments([
+            new builder.HeroCard(session)
+                .title("Classic White T-Shirt")
+                .subtitle("100% Soft and Luxurious Cotton")
+                .text("Price is $25 and carried in sizes (S, M, L, and XL)")
+                .images([builder.CardImage.create(session, 'http://petersapparel.parseapp.com/img/whiteshirt.png')])
+                .buttons([
+                    builder.CardAction.imBack(session, "buy classic white t-shirt", "Buy")
+                ]),
+            new builder.HeroCard(session)
+                .title("Classic Gray T-Shirt")
+                .subtitle("100% Soft and Luxurious Cotton")
+                .text("Price is $25 and carried in sizes (S, M, L, and XL)")
+                .images([builder.CardImage.create(session, 'http://petersapparel.parseapp.com/img/grayshirt.png')])
+                .buttons([
+                    builder.CardAction.imBack(session, "buy classic gray t-shirt", "Buy")
+                ])
+        ]);
+        session.send(msg).endDialog();
+
+
     },
     function(session, results) {
     }
