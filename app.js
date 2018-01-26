@@ -222,6 +222,8 @@ bot.dialog('CheckFridge', [
 bot.dialog('RecipeSuggestion', [
     function (session) {
 
+        session.send(`I found some delicious recipe with what you have! Take a look...`);
+
         //make an array of products
         var q = [];
         for (var product in session.userData.productList)
@@ -231,6 +233,7 @@ bot.dialog('RecipeSuggestion', [
 
         var url = `http://food2fork.com/api/search?key=`+apiKey+`&q=`+q;
 
+        var recipePublisher;
         var recipeTitle;
         var recipeUrl;
         var recipeImgUrl;
@@ -246,21 +249,11 @@ bot.dialog('RecipeSuggestion', [
         
             response.on("end", function (err) {
                 // finished transferring data
-                data = JSON.parse(buffer);
-        
-                //extract the datas
-                for (var i = 0; i < data.recipes.length; i++)
-                {
-                    recipeTitle  = data.recipes[i].title;
-                    recipeUrl    = data.recipes[i].source_url;
-                    recipeImgUrl = data.recipes[i].image_url;
-                    if(i >= 0 && i < 10)
-                    {
-                        //Caroussel function call
-                        carousselSetup(recipeTitle, recipeUrl, recipeImgUrl, session, response);
-                    }
-                }     
+                data = JSON.parse(buffer);   
             
+                //Caroussel function call
+                carousselSetup(data, session, response);
+
             }); 
         })
     },
@@ -270,10 +263,10 @@ bot.dialog('RecipeSuggestion', [
 
 
 
-function carousselSetup(recipeTitle, recipeUrl, recipeImgUrl, session, response)
+function carousselSetup(data, session, response)
 {
-    var cards = getCardsAttachments();
-
+    var cards = getCardsAttachments(data);
+    
     // create reply with Carousel AttachmentLayout
     var reply = new builder.Message(session)
         .attachmentLayout(builder.AttachmentLayout.carousel)
@@ -282,59 +275,57 @@ function carousselSetup(recipeTitle, recipeUrl, recipeImgUrl, session, response)
     session.send(reply);
 };
 
+function getCardsAttachments(data, session) {
 
-
-
-
-
-
-
-
-
-function getCardsAttachments(session) {
     return [
         new builder.HeroCard(session)
-            .title('Azure Storage')
-            .subtitle('Offload the heavy lifting of data center management')
-            .text('Store and help protect your data. Get durable, highly available data storage across the globe and pay only for what you use.')
+            .title(data.recipes[0].title)
+            .subtitle(data.recipes[0].publisher)
             .images([
-                builder.CardImage.create(session, 'https://docs.microsoft.com/en-us/azure/storage/media/storage-introduction/storage-concepts.png')
+                builder.CardImage.create(session, data.recipes[0].image_url)
             ])
             .buttons([
-                builder.CardAction.openUrl(session, 'https://azure.microsoft.com/en-us/services/storage/', 'Learn More')
-            ]),
-
-        new builder.ThumbnailCard(session)
-            .title('DocumentDB')
-            .subtitle('Blazing fast, planet-scale NoSQL')
-            .text('NoSQL service for highly available, globally distributed apps—take full advantage of SQL and JavaScript over document and key-value data without the hassles of on-premises or virtual machine-based cloud database options.')
-            .images([
-                builder.CardImage.create(session, 'https://docs.microsoft.com/en-us/azure/documentdb/media/documentdb-introduction/json-database-resources1.png')
-            ])
-            .buttons([
-                builder.CardAction.openUrl(session, 'https://azure.microsoft.com/en-us/services/documentdb/', 'Learn More')
+                builder.CardAction.openUrl(session, data.recipes[0].source_url, 'Learn More')
             ]),
 
         new builder.HeroCard(session)
-            .title('Azure Functions')
-            .subtitle('Process events with a serverless code architecture')
-            .text('An event-based serverless compute experience to accelerate your development. It can scale based on demand and you pay only for the resources you consume.')
+            .title(data.recipes[1].title)
+            .subtitle(data.recipes[1].publisher)
             .images([
-                builder.CardImage.create(session, 'https://azurecomcdn.azureedge.net/cvt-5daae9212bb433ad0510fbfbff44121ac7c759adc284d7a43d60dbbf2358a07a/images/page/services/functions/01-develop.png')
+                builder.CardImage.create(session, data.recipes[1].image_url)
             ])
             .buttons([
-                builder.CardAction.openUrl(session, 'https://azure.microsoft.com/en-us/services/functions/', 'Learn More')
+                builder.CardAction.openUrl(session, data.recipes[1].source_url, 'Learn More')
             ]),
 
-        new builder.ThumbnailCard(session)
-            .title('Cognitive Services')
-            .subtitle('Build powerful intelligence into your applications to enable natural and contextual interactions')
-            .text('Enable natural and contextual interaction with tools that augment users\' experiences using the power of machine-based intelligence. Tap into an ever-growing collection of powerful artificial intelligence algorithms for vision, speech, language, and knowledge.')
+        new builder.HeroCard(session)
+            .title(data.recipes[2].title)
+            .subtitle(data.recipes[2].publisher)
             .images([
-                builder.CardImage.create(session, 'https://azurecomcdn.azureedge.net/cvt-68b530dac63f0ccae8466a2610289af04bdc67ee0bfbc2d5e526b8efd10af05a/images/page/services/cognitive-services/cognitive-services.png')
+                builder.CardImage.create(session, data.recipes[2].image_url)
             ])
             .buttons([
-                builder.CardAction.openUrl(session, 'https://azure.microsoft.com/en-us/services/cognitive-services/', 'Learn More')
+                builder.CardAction.openUrl(session, data.recipes[2].source_url, 'Learn More')
+            ]),
+
+        new builder.HeroCard(session)
+            .title(data.recipes[3].title)
+            .subtitle(data.recipes[3].publisher)
+            .images([
+                builder.CardImage.create(session, data.recipes[3].image_url)
+            ])
+            .buttons([
+                builder.CardAction.openUrl(session, data.recipes[3].source_url, 'Learn More')
+            ]),
+
+        new builder.HeroCard(session)
+            .title(data.recipes[4].title)
+            .subtitle(data.recipes[4].publisher)
+            .images([
+                builder.CardImage.create(session, data.recipes[4].image_url)
+            ])
+            .buttons([
+                builder.CardAction.openUrl(session, data.recipes[4].source_url, 'Learn More')
             ])
     ];
 }
@@ -343,27 +334,24 @@ function getCardsAttachments(session) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 bot.dialog('Help', function (session) {
-    // ...
+    session.send(`You seems a bit lost ${session.userData.name}! Let me help you...`);
+    session.sendTyping();
+    setTimeout(function () {
+        session.send("If you want to manage your fridge, just click on the Manage button");
+    }, 1500);
+    setTimeout(function () {
+        session.send("You can also check your current fridge status, by clicking on the second one! :)");
+    }, 1500);
+    setTimeout(function () {
+        session.send("And because we taking care of you, we suggest our best meals with what you got in stock <3");
+    }, 1500);
+    setTimeout(function () {
+        session.send("Just wait a second, i will put you back on the menu...");
+    }, 1500);
+    setTimeout(function () {
+        session.beginDialog('frigoMenu');
+    }, 1500);
 }).triggerAction({
     matches: 'Help'
 });
