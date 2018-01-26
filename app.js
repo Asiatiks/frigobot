@@ -1,10 +1,9 @@
 var builder = require('botbuilder');
 var restify = require('restify');
 var env     = require('dotenv');
+//dialog with the API
+var http = require("http");
 env.config();
-
-var api_key = "http://food2fork.com/api/search?key=26e704c5e32e6f52bb94c7d68c90b38c&q=";
-
 
 // Create chat connector for communicating with the Bot Framework Service
 var connector = new builder.ChatConnector({
@@ -201,10 +200,9 @@ bot.dialog('CheckFridge', [
     function (session) {
 
         //Generate fake datas for the begining of the demo
-        session.userData.productList["tomato"] = 4;
-        session.userData.productList["apple"] = 8;
-        session.userData.productList["carrots"] = 7;
-        session.userData.productList["spinach"] = 9;
+        session.userData.productList["chicken"] = 4;
+        session.userData.productList["mushrooms"] = 8;
+        console.log(`Yes, I've created some products`);
 
         var productList = session.userData.productList;  
         session.send("This what you currently have on your fridge");
@@ -213,7 +211,6 @@ bot.dialog('CheckFridge', [
             var value = productList[product];
             session.send(product + " = " + productList[product] + '<br>');
         }
-
     },
     function(session, results) {
     }
@@ -225,31 +222,47 @@ bot.dialog('CheckFridge', [
 bot.dialog('RecipeSuggestion', [
     function (session) {
 
-        console.log('Api KEY : '+apiKey);
-
-        var productList = { "Apple" : 1, "Chocolate" : 2, "biscuit": 3 };  
-        for(var product in productList)
+        //make an array of products
+        var q = [];
+        for (var product in session.userData.productList)
         {
-            var value = productList[product];
-            session.send(product + " = " + value + '<br>');
+            q.push(product);
         }
 
+        var url = `http://food2fork.com/api/search?key=`+apiKey+`&q=`+q;
 
+        var recipeTitle;
+        var recipeUrl;
+        var recipeImgUrl;
 
-        var msg = new builder.Message(session);
-        msg.attachmentLayout(builder.AttachmentLayout.carousel)
-        msg.attachments([
-            new builder.HeroCard(session)
-                .title("Fridge Status")
-                .subtitle("This what you currently have on your fridge")
-                .text("Price is $25 and carried in sizes (S, M, L, and XL)")
-                .buttons([
-                    builder.CardAction.imBack(session, "buy classic white t-shirt", "Buy")
-                ])
-        ]);
-        session.send(msg).endDialog();
-
-
+        var query = http.get(url, function (response) {
+            var buffer = "", 
+                data,
+                route;
+        
+            response.on("data", function (chunk) {
+                buffer += chunk;
+            }); 
+        
+            response.on("end", function (err) {
+                // finished transferring data
+                data = JSON.parse(buffer);
+        
+                //extract the datas
+                for (var i = 0; i < data.recipes.length; i++)
+                {
+                    recipeTitle  = data.recipes[i].title;
+                    recipeUrl    = data.recipes[i].source_url;
+                    recipeImgUrl = data.recipes[i].image_url;
+                    if(i >= 0 && i < 10)
+                    {
+                        //Caroussel function call
+                        carousselSetup(recipeTitle, recipeUrl, recipeImgUrl, session, response);
+                    }
+                }     
+            
+            }); 
+        })
     },
     function(session, results) {
     }
@@ -298,10 +311,27 @@ bot.dialog('buyButtonClick', [
         // Send confirmation to users
         session.send("A '%(size)s %(product)s' has been added to your cart.", item).endDialog();
     }
-]).triggerAction({ matches: /(buy|add)\s.*shirt/i });
+]).triggerAction({ matches: /(recipe)\s.*shirt/i });
 
 
-
+function carousselSetup(recipeTitle, recipeUrl, recipeImgUrl, session, response)
+{
+    var msg = new builder.Message(session);
+    msg.attachmentLayout(builder.AttachmentLayout.carousel)
+    msg.attachments([
+        new builder.HeroCard(session)
+            .title(recipeTitle)
+            .images([
+                builder.CardImage.create(session, recipeImgUrl)
+            ])
+            // .subtitle("This what you currently have on your fridge")
+            .text("Price is $25 and carried in sizes (S, M, L, and XL)")
+            .buttons([
+                builder.CardAction.imBack(session, "Go to the recipe", "recipe")
+            ])
+    ]);  
+    session.send(msg).endDialog();  
+}
 
 
 bot.dialog('Help', function (session) {
