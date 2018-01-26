@@ -94,7 +94,6 @@ var menuItems = {
     "Help": {
         item: "Help"
     }
-
 }
 bot.dialog('frigoMenu', [
     function (session) {
@@ -211,142 +210,6 @@ bot.dialog('RemoveProduct', [
     }
 ]);
 
-bot.dialog('CheckFridge', [
-    function (session) {
-
-        //Generate fake datas for the begining of the demo
-        session.userData.productList["chicken"] = 4;
-        session.userData.productList["mushrooms"] = 8;
-        console.log(`Yes, I've created some products`);
-
-        var productList = session.userData.productList;  
-        session.send("This what you currently have on your fridge");
-        for(var product in productList)
-        {
-            var value = productList[product];
-            session.send(product + " = " + productList[product] + '<br>');
-        }
-    },
-    function(session, results) {
-    }
-])
-
-
-
-
-bot.dialog('RecipeSuggestion', [
-    function (session) {
-
-        //make an array of products
-        var q = [];
-        for (var product in session.userData.productList)
-        {
-            q.push(product);
-        }
-
-        var url = `http://food2fork.com/api/search?key=`+apiKey+`&q=`+q;
-
-        var recipeTitle;
-        var recipeUrl;
-        var recipeImgUrl;
-
-        var query = http.get(url, function (response) {
-            var buffer = "", 
-                data,
-                route;
-        
-            response.on("data", function (chunk) {
-                buffer += chunk;
-            }); 
-        
-            response.on("end", function (err) {
-                // finished transferring data
-                data = JSON.parse(buffer);
-        
-                //extract the datas
-                for (var i = 0; i < data.recipes.length; i++)
-                {
-                    recipeTitle  = data.recipes[i].title;
-                    recipeUrl    = data.recipes[i].source_url;
-                    recipeImgUrl = data.recipes[i].image_url;
-                    if(i >= 0 && i < 10)
-                    {
-                        //Caroussel function call
-                        carousselSetup(recipeTitle, recipeUrl, recipeImgUrl, session, response);
-                    }
-                }     
-            
-            }); 
-        })
-    },
-    function(session, results) {
-    }
-])
-
-// Add dialog to handle 'Buy' button click
-bot.dialog('buyButtonClick', [
-    function (session, args, next) {
-        // Get color and optional size from users utterance
-        var utterance = args.intent.matched[0];
-        var color = /(white|gray)/i.exec(utterance);
-        var size = /\b(Extra Large|Large|Medium|Small)\b/i.exec(utterance);
-        if (color) {
-            // Initialize cart item
-            var item = session.dialogData.item = { 
-                product: "classic " + color[0].toLowerCase() + " t-shirt",
-                size: size ? size[0].toLowerCase() : null,
-                price: 25.0,
-                qty: 1
-            };
-            if (!item.size) {
-                // Prompt for size
-                builder.Prompts.choice(session, "What size would you like?", "Small|Medium|Large|Extra Large");
-            } else {
-                //Skip to next waterfall step
-                next();
-            }
-        } else {
-            // Invalid product
-            session.send("I'm sorry... That product wasn't found.").endDialog();
-        }   
-    },
-    function (session, results) {
-        // Save size if prompted
-        var item = session.dialogData.item;
-        if (results.response) {
-            item.size = results.response.entity.toLowerCase();
-        }
-
-        // Add to cart
-        if (!session.userData.cart) {
-            session.userData.cart = [];
-        }
-        session.userData.cart.push(item);
-
-        // Send confirmation to users
-        session.send("A '%(size)s %(product)s' has been added to your cart.", item).endDialog();
-    }
-]).triggerAction({ matches: /(recipe)\s.*shirt/i });
-
-
-function carousselSetup(recipeTitle, recipeUrl, recipeImgUrl, session, response)
-{
-    var msg = new builder.Message(session);
-    msg.attachmentLayout(builder.AttachmentLayout.carousel)
-    msg.attachments([
-        new builder.HeroCard(session)
-            .title(recipeTitle)
-            .images([
-                builder.CardImage.create(session, recipeImgUrl)
-            ])
-            // .subtitle("This what you currently have on your fridge")
-            .text("Price is $25 and carried in sizes (S, M, L, and XL)")
-            .buttons([
-                builder.CardAction.imBack(session, "Go to the recipe", "recipe")
-            ])
-    ]);  
-    session.send(msg).endDialog();  
-}
 
 //Identify entities and render a sentence to store or remove in "phraseTab"
 function identifyProduct(session, args, next){
@@ -400,8 +263,136 @@ function sameProduct(products, values){
     return same;
 }
 
+bot.dialog('CheckFridge', [
+    function (session) {
+        //Generate fake datas for the begining of the demo
+        session.userData.productList["chicken"] = 4;
+        session.userData.productList["mushrooms"] = 8;
+        console.log(`Yes, I've created some products`);
+        var productList = session.userData.productList;  
+        session.send("This what you currently have on your fridge");
+        for(var product in productList)
+        {
+            var value = productList[product];
+            session.send(product + " = " + productList[product] + '<br>');
+        }
+    },
+    function(session, results) {
+    }
+])
+bot.dialog('RecipeSuggestion', [
+    function (session) {
+        session.send(`I found some delicious recipe with what you have! Take a look...`);
+        //make an array of products
+        var q = [];
+        for (var product in session.userData.productList)
+        {
+            q.push(product);
+        }
+        var url = `http://food2fork.com/api/search?key=`+apiKey+`&q=`+q;
+        var recipePublisher;
+        var recipeTitle;
+        var recipeUrl;
+        var recipeImgUrl;
+        var query = http.get(url, function (response) {
+            var buffer = "", 
+                data,
+                route;
+        
+            response.on("data", function (chunk) {
+                buffer += chunk;
+            }); 
+        
+            response.on("end", function (err) {
+                // finished transferring data
+                data = JSON.parse(buffer);   
+            
+                //Caroussel function call
+                carousselSetup(data, session, response);
+            }); 
+        })
+    },
+    function(session, results) {
+    }
+])
+function carousselSetup(data, session, response)
+{
+    var cards = getCardsAttachments(data);
+    
+    // create reply with Carousel AttachmentLayout
+    var reply = new builder.Message(session)
+        .attachmentLayout(builder.AttachmentLayout.carousel)
+        .attachments(cards);
+    session.send(reply);
+};
+function getCardsAttachments(data, session) {
+    return [
+        new builder.HeroCard(session)
+            .title(data.recipes[0].title)
+            .subtitle(data.recipes[0].publisher)
+            .images([
+                builder.CardImage.create(session, data.recipes[0].image_url)
+            ])
+            .buttons([
+                builder.CardAction.openUrl(session, data.recipes[0].source_url, 'Learn More')
+            ]),
+        new builder.HeroCard(session)
+            .title(data.recipes[1].title)
+            .subtitle(data.recipes[1].publisher)
+            .images([
+                builder.CardImage.create(session, data.recipes[1].image_url)
+            ])
+            .buttons([
+                builder.CardAction.openUrl(session, data.recipes[1].source_url, 'Learn More')
+            ]),
+        new builder.HeroCard(session)
+            .title(data.recipes[2].title)
+            .subtitle(data.recipes[2].publisher)
+            .images([
+                builder.CardImage.create(session, data.recipes[2].image_url)
+            ])
+            .buttons([
+                builder.CardAction.openUrl(session, data.recipes[2].source_url, 'Learn More')
+            ]),
+        new builder.HeroCard(session)
+            .title(data.recipes[3].title)
+            .subtitle(data.recipes[3].publisher)
+            .images([
+                builder.CardImage.create(session, data.recipes[3].image_url)
+            ])
+            .buttons([
+                builder.CardAction.openUrl(session, data.recipes[3].source_url, 'Learn More')
+            ]),
+        new builder.HeroCard(session)
+            .title(data.recipes[4].title)
+            .subtitle(data.recipes[4].publisher)
+            .images([
+                builder.CardImage.create(session, data.recipes[4].image_url)
+            ])
+            .buttons([
+                builder.CardAction.openUrl(session, data.recipes[4].source_url, 'Learn More')
+            ])
+    ];
+}
+
 bot.dialog('Help', function (session) {
-    // ...
+    session.send(`You seems a bit lost ${session.userData.name}! Let me help you...`);
+    session.sendTyping();
+    setTimeout(function () {
+        session.send("If you want to manage your fridge, just click on the Manage button");
+    }, 1500);
+    setTimeout(function () {
+        session.send("You can also check your current fridge status, by clicking on the second one! :)");
+    }, 1500);
+    setTimeout(function () {
+        session.send("And because we taking care of you, we suggest our best meals with what you got in stock <3");
+    }, 1500);
+    setTimeout(function () {
+        session.send("Just wait a second, i will put you back on the menu...");
+    }, 1500);
+    setTimeout(function () {
+        session.beginDialog('frigoMenu');
+    }, 1500);
 }).triggerAction({
     matches: 'Help'
 });
