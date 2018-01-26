@@ -69,6 +69,7 @@ bot.dialog('SignUp', [
         session.userData.name = name;
         session.endDialogWithResult(results);
         session.userData.productList = new Object();
+        session.userData.productList["tomato"] = 0;        
         session.save();
         session.beginDialog('frigoMenu');
     }
@@ -97,6 +98,7 @@ var menuItems = {
 }
 bot.dialog('frigoMenu', [
     function (session) {
+        bot.recognizer(luisRecognizer);
         builder.Prompts.choice(session, `Main menu: `, menuItems, { listStyle: 3 });
     },
     function(session, results) {
@@ -107,8 +109,7 @@ bot.dialog('frigoMenu', [
     }
 ])
 .triggerAction({
-    matches: /^main menu$/i,
-    confirmPrompt: "You'll loose your progression, are you sure?"
+    matches: /^main menu$/i
 });
 
 
@@ -142,47 +143,61 @@ bot.dialog('ManageFridge', [
     }
 ])
 .triggerAction({
-    matches: /^manage menu$/i,
-    confirmPrompt: "You'll loose your progression, are you sure?"
+    matches: /^manage menu$/i
 });
 
-
-
-
-
-
-
+var products = new Object();
 /**
 * Add Products in the fridge
 */
 bot.dialog('AddProduct', [
-    function (session){
-        builder.Prompts.text(session, `What did you bought today? :)`);
-    },
     function (session, args, next){
-        bot.recognizer(luisRecognizer);
-        //render the user sentence 
-        //var sentence = identifyProduct(session, args, next);
-        //store all products
-
-        console.log(args.intent);
-
-        var intentResult = args.intent;
-        var fruitEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'fruit');	
-
-        productList.push(sentence);
-        console.log(`Product List : ${productList}`);        
-        builder.Prompts.text(session, `I've just added ${sentence} in the fridge`);
+         
+        var found = 0;
+        //console.log(`Object session : ${JSON.stringify(session.userData, null, 4)}`);
+        products = identifyProduct(session, args, next);
+       
+        //Pour chaque produits du frigo en session...
+        for (var fridgeProduct in session.userData.productList){
+            // Pour le produit + nombre renseigné
+            for (var productManage in products){
+                console.log("FRIDGEPRODUCT:");
+                console.log(fridgeProduct);
+                console.log("USER DATA FRIDGEPRODUCT:");
+                console.log(session.userData.productList[fridgeProduct]);
+                console.log("PRODUCT MANAGE:")
+                console.log(productManage);
+                console.log("PRODUCTS ");
+                console.log(products[productManage]);
+                if (fridgeProduct == productManage){
+                    console.log("ON EST SUR LE MEME PRODUIT");
+                    session.userData.productList[fridgeProduct] += parseInt(products[productManage]);
+                    found = 1;
+                    console.log("ON EST SUR LE MEME PRODUIT, passage à:");
+                    console.log(session.userData.productList[fridgeProduct]);
+                }
+            }
+        }
+        if (found == 0){
+            for (var productManage in products){
+                console.log(session.userData.productList[productManage]);
+                //  = parseInt(products[]);
+            }
+        }
     },
     function (session, results) {
-        session.userData.productList = productList;
+        // console.log(`Products Key NEXT : ${JSON.stringify(results.response, null, 4)}`);
+        // session.userData.productList = products;
         session.endDialogWithResult(results);
         session.save();
-        // console.log(session);
+        console.log(`Object session : ${JSON.stringify(session.userData.productList, null, 4)}`);
+        
+        // console.log(`Ceci est la prodcut list ==> ${JSON.stringify(session.userData.productList, null, 4)}`);
+        // console.log('OBJET AFTER ? : '+session.userData.productList);
     }
-]);
-
-
+]).triggerAction({
+    matches: 'AddProduct'
+});
 
 //Remove products from the fridge
 bot.dialog('RemoveProduct', [
@@ -333,6 +348,57 @@ function carousselSetup(recipeTitle, recipeUrl, recipeImgUrl, session, response)
     session.send(msg).endDialog();  
 }
 
+//Identify entities and render a sentence to store or remove in "phraseTab"
+function identifyProduct(session, args, next){
+    session.send(`Okay! Let's '%s'`, session.message.text);
+    // builder.Prompts.text('Please provide all the products');
+    
+    //Products are stored here
+    var productList = new Object();
+
+    var intentResult = args.intent;
+    var fruitEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'fruit');		
+    var vegetableEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'vegetable');		
+    var numberEntity = builder.EntityRecognizer.findEntity(intentResult.entities, 'builtin.number');		
+
+    let product = '';
+    let value;
+
+    if (fruitEntity)
+    {
+        //fruit entity detected
+        product = fruitEntity.entity;
+        
+        console.log('Fruit => %s', fruitEntity.entity);
+        next({ response: fruitEntity.entity });
+    }
+    else if (vegetableEntity){
+        //vegetable entity detected
+        product = vegetableEntity.entity;
+       
+        console.log('Vegetable => %s', vegetableEntity.entity);
+        next({ response: vegetableEntity.entity });		
+    }
+
+    if (numberEntity){
+        //number entity detected
+        productList[product] = numberEntity.entity;
+    } else {
+        productList[product] = 1;
+    }
+    return productList;
+}
+
+//Function which test if the product already exist
+function sameProduct(products, values){
+    let same = false;
+            
+    for (var p in products)
+    {
+        console.log(products[p]+p);
+    }
+    return same;
+}
 
 bot.dialog('Help', function (session) {
     // ...
